@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Qurʾān Revision Schedule</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Firebase (same version as tracker) -->
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getFirestore,doc,getDoc}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+const firebaseConfig={
+  apiKey:"AIzaSyDub4Wxda5KA3rT8VotW3Eii6BrVu2xVcQ",
+  authDomain:"qur-an-revision-tracker.firebaseapp.com",
+  projectId:"qur-an-revision-tracker",
+  storageBucket:"qur-an-revision-tracker.firebasestorage.app",
+  messagingSenderId:"910891744773",
+  appId:"1:910891744773:web:d3e9f249da9f1c065f666c"
+};
+const fbApp=initializeApp(firebaseConfig);
+const db=getFirestore(fbApp);
+window._fbDb=db;
+window._fbDoc=doc;
+window._fbGetDoc=getDoc;
+window._fbReady=true;
+window.dispatchEvent(new Event('fbready'));
+</script>
+
+<style>
+:root{
+  --bg:#0f1117;--sur:#181c27;--sur2:#1e2333;--sur3:#252b3b;
+  --bd:#2a3045;--bd2:#3a4060;
+  --tx:#e8eaf0;--mu:#7a8099;--mu2:#4a5068;
+  --low:#22c55e;--lbg:#0d2818;--lbd:#166534;
+  --med:#f59e0b;--mbg:#271d07;--mbd:#92400e;
+  --hi:#ef4444;--hbg:#280d0d;--hbd:#991b1b;
+  --acc:#6366f1;--acc2:#818cf8;
+  --gold:#d4af37;--gold2:#e8c84a;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden;}
+
+/* ── Topbar ── */
+.topbar{position:sticky;top:0;z-index:100;background:rgba(15,17,23,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--bd);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:56px;}
+.topbar-left .tbar-title{font-family:'Amiri',serif;font-size:1.15rem;color:var(--gold);}
+.topbar-left .tbar-sub{font-size:0.62rem;color:var(--mu);letter-spacing:0.1em;text-transform:uppercase;}
+.sync-row{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--mu);}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--mu);transition:background 0.3s;flex-shrink:0;}
+.sdot.ok{background:var(--low);}
+.sdot.busy{background:var(--med);animation:blink 0.7s infinite;}
+.sdot.err{background:var(--hi);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* ── Loading ── */
+.loading-overlay{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+.loading-overlay.hidden{display:none;}
+.spinner{width:34px;height:34px;border:3px solid var(--bd);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay p{font-size:0.82rem;color:var(--mu);}
+
+/* ── Main ── */
+main{max-width:900px;margin:0 auto;padding:14px 14px 90px;}
+
+/* ── Cards ── */
+.card{background:var(--sur);border:1px solid var(--bd);border-radius:14px;padding:14px 16px;margin-bottom:12px;}
+.card-title{font-size:0.68rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.card-title::before{content:'';display:block;width:3px;height:13px;background:var(--gold);border-radius:2px;flex-shrink:0;}
+
+/* ── Config ── */
+.cfg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;}
+.field label{display:block;font-size:0.62rem;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--mu);margin-bottom:5px;}
+.field input,.field select{width:100%;padding:9px 11px;background:var(--sur2);border:1px solid var(--bd);border-radius:8px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:0.86rem;outline:none;transition:border-color 0.18s;}
+.field input:focus,.field select:focus{border-color:var(--gold);}
+.field select option{background:var(--sur2);}
+.btn-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+button{font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:9px 16px;border-radius:8px;cursor:pointer;transition:all 0.15s;border:none;}
+.btn-gold{background:var(--gold);color:#0f1117;}
+.btn-gold:hover{background:var(--gold2);}
+.btn-outline{background:transparent;border:1px solid var(--bd2);color:var(--mu);}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold);}
+
+/* ── Tracker banner ── */
+.tracker-banner{border-radius:10px;padding:11px 14px;margin-bottom:12px;font-size:0.76rem;line-height:1.65;display:flex;align-items:flex-start;gap:10px;}
+.tracker-banner.ok{background:var(--lbg);border:1px solid var(--lbd);color:#90e8b0;}
+.tracker-banner.err{background:var(--hbg);border:1px solid var(--hbd);color:#e8a0a0;}
+.tracker-banner.busy{background:var(--mbg);border:1px solid var(--mbd);color:#e8d080;}
+.tracker-banner.info{background:var(--sur2);border:1px solid var(--bd2);color:var(--mu);}
+.tb-icon{font-size:1rem;flex-shrink:0;margin-top:1px;}
+
+/* ── System note ── */
+.sys-note{background:var(--sur);border:1px solid var(--bd);border-left:3px solid var(--gold);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:0.76rem;line-height:1.75;color:var(--mu);}
+.sys-note .sn-title{font-size:0.66rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
+.sys-note ul{padding-left:14px;}
+.sys-note li{margin-bottom:4px;}
+.sys-note strong{color:var(--tx);}
+
+/* ── Time warning ── */
+.time-warn{background:var(--mbg);border:1px solid var(--mbd);border-radius:8px;padding:10px 13px;font-size:0.74rem;color:#e8d080;margin-bottom:12px;display:none;line-height:1.6;}
+
+/* ── Stats bar ── */
+.stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:12px;}
+.stat-box{background:var(--sur);border:1px solid var(--bd);border-radius:10px;padding:12px 10px;text-align:center;}
+.stat-val{font-size:1.65rem;font-weight:700;color:var(--gold);line-height:1;}
+.stat-lbl{font-size:0.58rem;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--mu);margin-top:4px;}
+.prog-outer{background:var(--sur2);border-radius:4px;height:3px;margin:6px 0 0;overflow:hidden;}
+.prog-inner{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:4px;}
+
+/* ── Legend ── */
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;font-size:0.66rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--mu);align-items:center;}
+.legend-item{display:flex;align-items:center;gap:5px;}
+.ldot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+.legend-hint{margin-left:auto;font-size:0.6rem;font-weight:400;color:var(--mu2);}
+
+/* ── Section title ── */
+.sec-title{font-size:0.66rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--mu);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;}
+.sec-title span{color:var(--mu2);font-weight:400;}
+
+/* ── Day cards ── */
+.schedule-grid{display:grid;gap:10px;}
+.day-card{background:var(--sur);border:1px solid var(--bd);border-radius:14px;overflow:hidden;transition:border-color 0.2s;}
+.day-card:hover{border-color:var(--bd2);}
+
+.day-hdr{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--sur2);border-bottom:1px solid var(--bd);flex-wrap:wrap;gap:6px;}
+.day-label{font-size:0.82rem;font-weight:700;color:var(--tx);}
+.day-range{font-size:0.64rem;color:var(--mu);margin-top:1px;}
+.day-badges{display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
+.badge{font-size:0.6rem;font-weight:700;letter-spacing:0.08em;padding:3px 8px;border-radius:20px;}
+.badge-gold{background:rgba(212,175,55,0.15);color:var(--gold);border:1px solid rgba(212,175,55,0.3);}
+.badge-time{background:var(--sur3);color:var(--mu);border:1px solid var(--bd);}
+.badge-strong{background:var(--lbg);color:var(--low);border:1px solid var(--lbd);}
+.badge-weak{background:var(--hbg);color:var(--hi);border:1px solid var(--hbd);}
+
+/* ── Page grid ── */
+.pages-wrap{padding:12px 14px;}
+.pages-section-lbl{font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+.page-grid{display:flex;flex-wrap:wrap;gap:5px;}
+
+.page-btn{
+  width:40px;height:40px;border-radius:8px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-size:0.7rem;font-weight:700;cursor:pointer;
+  transition:all 0.15s;border:1px solid;
+  position:relative;user-select:none;line-height:1;gap:1px;
+}
+.page-btn .pg-num{font-size:0.72rem;font-weight:700;}
+.page-btn .pg-mis{font-size:0.56rem;font-weight:700;opacity:0.85;}
+
+/* States */
+.page-btn.weak{background:var(--hbg);border-color:var(--hbd);color:var(--hi);}
+.page-btn.weak:hover{border-color:var(--hi);}
+.page-btn.strong{background:var(--lbg);border-color:var(--lbd);color:var(--low);}
+.page-btn.strong:hover{border-color:var(--low);}
+.page-btn.medium{background:var(--mbg);border-color:var(--mbd);color:var(--med);}
+.page-btn.medium:hover{border-color:var(--med);}
+.page-btn.manual-override{box-shadow:0 0 0 2px rgba(99,102,241,0.5);}
+
+/* ── Method block ── */
+.method-block{margin-top:10px;padding:10px 12px;border-radius:8px;font-size:0.74rem;line-height:1.7;}
+.method-block.all-weak{background:var(--hbg);border:1px solid var(--hbd);color:#e8a8a8;}
+.method-block.all-strong{background:var(--lbg);border:1px solid var(--lbd);color:#90e8b0;}
+.method-block.mixed{background:var(--sur2);border:1px solid var(--bd2);color:var(--mu);}
+.method-lbl{font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+.method-block strong{color:var(--tx);}
+
+/* ── Mistake breakdown (tooltip-style) ── */
+.page-btn .tooltip{
+  display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
+  background:var(--sur3);border:1px solid var(--bd2);border-radius:6px;
+  padding:6px 9px;font-size:0.65rem;white-space:nowrap;z-index:20;
+  color:var(--tx);line-height:1.5;pointer-events:none;
+  box-shadow:0 4px 16px rgba(0,0,0,0.5);
+}
+.page-btn:hover .tooltip{display:block;}
+
+/* ── Empty ── */
+.empty{text-align:center;padding:40px;color:var(--mu);font-size:0.82rem;}
+
+/* ── Refresh button ── */
+.refresh-btn{font-size:0.66rem;font-weight:600;letter-spacing:0.1em;padding:5px 10px;border-radius:6px;background:var(--sur2);border:1px solid var(--bd2);color:var(--mu);cursor:pointer;transition:all 0.15s;}
+.refresh-btn:hover{border-color:var(--gold);color:var(--gold);}
+
+/* ── Ornament ── */
+.ornament{text-align:center;font-family:'Amiri',serif;color:var(--gold);font-size:1.1rem;letter-spacing:0.4em;margin:2rem 0 1rem;opacity:0.3;}
+
+@media(max-width:540px){
+  .cfg-grid{grid-template-columns:1fr 1fr;}
+  .page-btn{width:36px;height:36px;}
+  .page-btn .pg-num{font-size:0.66rem;}
+}
+@media print{
+  .topbar,.btn-row,.refresh-btn,.loading-overlay{display:none;}
+  body{background:white;color:black;}
+}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <p>Loading your progress…</p>
+</div>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="tbar-title">القرآن الكريم</div>
+    <div class="tbar-sub">Revision Schedule</div>
+  </div>
+  <div class="sync-row">
+    <div class="sdot" id="sdot"></div>
+    <span id="slbl">Loading</span>
+  </div>
+</div>
+
+<main>
+
+  <!-- Tracker status banner -->
+  <div class="tracker-banner info" id="trackerBanner">
+    <span class="tb-icon">🔄</span>
+    <span id="trackerMsg">Connecting to your mistakes tracker…</span>
+  </div>
+
+  <!-- Settings -->
+  <div class="card">
+    <div class="card-title">Settings</div>
+    <div class="cfg-grid">
+      <div class="field">
+        <label>Total Pages Memorised</label>
+        <input type="number" id="totalPages" value="173" min="2" max="604" onchange="generateSchedule()">
+      </div>
+      <div class="field">
+        <label>Cycle Length</label>
+        <select id="cycleDays" onchange="generateSchedule()">
+          <option value="7">7 days</option>
+          <option value="10" selected>10 days</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Daily Time</label>
+        <select id="dailyTime" onchange="generateSchedule()">
+          <option value="45">30–45 min</option>
+          <option value="60" selected>1 hour</option>
+          <option value="105">1.5–2 hours</option>
+          <option value="150">2+ hours</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Strong if ≤ N mistakes</label>
+        <input type="number" id="strongThreshold" value="2" min="0" max="10" onchange="reclassifyFromTracker()">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-gold" onclick="refreshTracker()">↻ Refresh from Tracker</button>
+      <button class="btn-outline" onclick="window.print()">Print / PDF</button>
+    </div>
+  </div>
+
+  <!-- System note -->
+  <div class="sys-note">
+    <div class="sn-title">How this works</div>
+    <ul>
+      <li><strong>Mistake data</strong> is pulled live from your tracker. Pages with ≤ 2 active mistakes are 🟢 strong; 3–4 are 🟡 medium; 5+ are 🔴 weak.</li>
+      <li><strong>Strong pages:</strong> recite by heart — mushaf closed. Then go back and fix the specific ayāt with mistakes.</li>
+      <li><strong>Medium / weak pages:</strong> open mushaf first → read slowly → close → recite by heart. 2–3 passes.</li>
+      <li><strong>Manual override:</strong> tap any page to toggle it. A purple glow means it's been manually overridden.</li>
+      <li><strong>Auto-sync:</strong> hit "Refresh from Tracker" anytime after a revision session to re-classify pages.</li>
+      <li><strong>More pages memorised:</strong> increase Total Pages above — the schedule recalculates instantly.</li>
+    </ul>
+  </div>
+
+  <!-- Time warning -->
+  <div class="time-warn" id="timeWarn"></div>
+
+  <!-- Stats -->
+  <div class="stats-bar" id="statsBar"></div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="ldot" style="background:var(--hi)"></div> Weak (5+ mistakes)</div>
+    <div class="legend-item"><div class="ldot" style="background:var(--med)"></div> Medium (3–4)</div>
+    <div class="legend-item"><div class="ldot" style="background:var(--low)"></div> Strong (≤ 2)</div>
+    <div class="legend-item"><div class="ldot" style="background:var(--acc2);border-radius:50%"></div> Overridden</div>
+    <span class="legend-hint">Tap page to toggle</span>
+  </div>
+
+  <!-- Schedule -->
+  <div class="sec-title">
+    <span>10-Day Cycle</span>
+    <span id="cycleSpan"></span>
+  </div>
+  <div class="schedule-grid" id="scheduleGrid">
+    <div class="empty">Loading schedule…</div>
+  </div>
+
+  <div class="ornament">۞ · · ۞ · · ۞</div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// SURAH → PAGE MAPPING (Uthmani / standard 15-line mushaf)
+// Page 1 = Al-Fatiha. Pages start from 2 for Al-Baqarah.
+// Each entry: [surahNumber, startPage]
+// ═══════════════════════════════════════════════════════
+const SURAH_PAGES = [
+  [1,1],[2,2],[3,50],[4,77],[5,106],[6,128],[7,151],[8,177],[9,187],
+  [10,208],[11,221],[12,235],[13,249],[14,255],[15,262],[16,267],[17,282],
+  [18,293],[19,305],[20,312],[21,322],[22,332],[23,342],[24,350],[25,359],
+  [26,367],[27,377],[28,385],[29,396],[30,404],[31,411],[32,415],[33,418],
+  [34,428],[35,434],[36,440],[37,446],[38,453],[39,458],[40,467],[41,477],
+  [42,483],[43,489],[44,496],[45,499],[46,502],[47,507],[48,511],[49,515],
+  [50,518],[51,520],[52,523],[53,526],[54,528],[55,531],[56,534],[57,537],
+  [58,542],[59,545],[60,549],[61,551],[62,553],[63,554],[64,556],[65,558],
+  [66,560],[67,562],[68,564],[69,566],[70,568],[71,570],[72,572],[73,574],
+  [74,575],[75,577],[76,578],[77,580],[78,582],[79,583],[80,585],[81,586],
+  [82,587],[83,587],[84,588],[85,589],[86,590],[87,591],[88,591],[89,592],
+  [90,594],[91,595],[92,595],[93,596],[94,596],[95,597],[96,597],[97,598],
+  [98,598],[99,599],[100,599],[101,600],[102,600],[103,601],[104,601],
+  [105,601],[106,602],[107,602],[108,602],[109,603],[110,603],[111,603],
+  [112,604],[113,604],[114,604]
+];
+
+// Build page→[surahNum] lookup
+const PAGE_SURAHS = {}; // page -> [{n, ayahStart, ayahEnd}]
+const SURAH_INFO  = {}; // surahNum -> {name, ayahs, startPage}
+
+const SURAHS_RAW=[[1,"Al-Fatihah",7],[2,"Al-Baqarah",286],[3,"Aal-E-Imran",200],[4,"An-Nisa",176],[5,"Al-Maidah",120],[6,"Al-Anam",165],[7,"Al-Araf",206],[8,"Al-Anfal",75],[9,"At-Tawbah",129],[10,"Yunus",109],[11,"Hud",123],[12,"Yusuf",111],[13,"Ar-Rad",43],[14,"Ibrahim",52],[15,"Al-Hijr",99],[16,"An-Nahl",128],[17,"Al-Isra",111],[18,"Al-Kahf",110],[19,"Maryam",98],[20,"Ta-Ha",135],[21,"Al-Anbiya",112],[22,"Al-Hajj",78],[23,"Al-Muminun",118],[24,"An-Nur",64],[25,"Al-Furqan",77],[26,"Ash-Shuara",227],[27,"An-Naml",93],[28,"Al-Qasas",88],[29,"Al-Ankabut",69],[30,"Ar-Rum",60],[31,"Luqman",34],[32,"As-Sajdah",30],[33,"Al-Ahzab",73],[34,"Saba",54],[35,"Fatir",45],[36,"Ya-Sin",83],[37,"As-Saffat",182],[38,"Sad",88],[39,"Az-Zumar",75],[40,"Ghafir",85],[41,"Fussilat",54],[42,"Ash-Shura",53],[43,"Az-Zukhruf",89],[44,"Ad-Dukhan",59],[45,"Al-Jathiyah",37],[46,"Al-Ahqaf",35],[47,"Muhammad",38],[48,"Al-Fath",29],[49,"Al-Hujurat",18],[50,"Qaf",45],[51,"Adh-Dhariyat",60],[52,"At-Tur",49],[53,"An-Najm",62],[54,"Al-Qamar",55],[55,"Ar-Rahman",78],[56,"Al-Waqiah",96],[57,"Al-Hadid",29],[58,"Al-Mujadila",22],[59,"Al-Hashr",24],[60,"Al-Mumtahanah",13],[61,"As-Saf",14],[62,"Al-Jumuah",11],[63,"Al-Munafiqun",11],[64,"At-Taghabun",18],[65,"At-Talaq",12],[66,"At-Tahrim",12],[67,"Al-Mulk",30],[68,"Al-Qalam",52],[69,"Al-Haqqah",52],[70,"Al-Maarij",44],[71,"Nuh",28],[72,"Al-Jinn",28],[73,"Al-Muzzammil",20],[74,"Al-Muddaththir",56],[75,"Al-Qiyamah",40],[76,"Al-Insan",31],[77,"Al-Mursalat",50],[78,"An-Naba",40],[79,"An-Naziat",46],[80,"Abasa",42],[81,"At-Takwir",29],[82,"Al-Infitar",19],[83,"Al-Mutaffifin",36],[84,"Al-Inshiqaq",25],[85,"Al-Buruj",22],[86,"At-Tariq",17],[87,"Al-Ala",19],[88,"Al-Ghashiyah",26],[89,"Al-Fajr",30],[90,"Al-Balad",20],[91,"Ash-Shams",15],[92,"Al-Layl",21],[93,"Ad-Duha",11],[94,"Ash-Sharh",8],[95,"At-Tin",8],[96,"Al-Alaq",19],[97,"Al-Qadr",5],[98,"Al-Bayyinah",8],[99,"Az-Zalzalah",8],[100,"Al-Adiyat",11],[101,"Al-Qariah",11],[102,"At-Takathur",8],[103,"Al-Asr",3],[104,"Al-Humazah",9],[105,"Al-Fil",5],[106,"Quraysh",4],[107,"Al-Maun",7],[108,"Al-Kawthar",3],[109,"Al-Kafirun",6],[110,"An-Nasr",3],[111,"Al-Masad",5],[112,"Al-Ikhlas",4],[113,"Al-Falaq",5],[114,"An-Naas",6]];
+
+// Build SURAH_INFO
+SURAHS_RAW.forEach(([n,name,ayahs],i)=>{
+  const startPage = SURAH_PAGES[i][1];
+  SURAH_INFO[n]={name,ayahs,startPage};
+});
+
+// Build PAGE_SURAHS: which surahs appear on each page
+// Strategy: surah spans from its startPage to (next surah startPage - 1)
+for(let i=0;i<SURAH_PAGES.length;i++){
+  const [n,sp]=SURAH_PAGES[i];
+  const ep=i+1<SURAH_PAGES.length?SURAH_PAGES[i+1][1]-1:604;
+  for(let p=sp;p<=ep;p++){
+    if(!PAGE_SURAHS[p])PAGE_SURAHS[p]=[];
+    PAGE_SURAHS[p].push(n);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let D = {};          // Firebase data (same structure as tracker)
+let trackerLoaded = false;
+let pageOverrides = {}; // pageNum -> 'strong'|'medium'|'weak' (manual overrides)
+// Derived per-page data (recomputed from D)
+let pageData = {};   // pageNum -> {mistakes, highMis, medMis, lowMis, surahs:[{n,name,ayahs}]}
+
+// ═══════════════════════════════════════════════════════
+// FIREBASE
+// ═══════════════════════════════════════════════════════
+function setSync(state, lbl){
+  document.getElementById('sdot').className='sdot '+state;
+  const el=document.getElementById('slbl');
+  el.textContent=lbl;
+  el.style.color=state==='ok'?'var(--low)':state==='busy'?'var(--med)':state==='err'?'var(--hi)':'var(--mu)';
+}
+function setBanner(type, msg){
+  const b=document.getElementById('trackerBanner');
+  b.className='tracker-banner '+type;
+  const icons={ok:'✓',err:'✗',busy:'🔄',info:'ℹ'};
+  document.getElementById('trackerMsg').textContent=msg;
+  b.querySelector('.tb-icon').textContent=icons[type]||'ℹ';
+}
+
+async function waitForFb(){
+  if(window._fbReady)return;
+  return new Promise(res=>window.addEventListener('fbready',res,{once:true}));
+}
+
+async function loadFromFirebase(){
+  setSync('busy','Loading…');
+  setBanner('busy','Connecting to your mistakes tracker…');
+  try{
+    await waitForFb();
+    const ref = window._fbDoc(window._fbDb,'tracker','user_data');
+    const snap = await Promise.race([
+      window._fbGetDoc(ref),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000))
+    ]);
+    if(snap.exists()){
+      const data=snap.data();
+      D = data.D ? (typeof data.D==='string'?JSON.parse(data.D):data.D) : {};
+    } else {
+      D={};
+    }
+    trackerLoaded=true;
+    setSync('ok','Synced');
+    computePageData();
+    reclassifyFromTracker();
+    const total=countTrackerMistakes();
+    setBanner('ok',`Tracker data loaded — ${total} active mistakes across your pages. Classification updated.`);
+  }catch(e){
+    setSync('err','Offline');
+    setBanner('err','Could not reach tracker. Showing manual classification only. Tap "Refresh from Tracker" to retry.');
+    generateSchedule();
+  }
+}
+
+function countTrackerMistakes(){
+  let t=0;
+  for(const p of Object.values(pageData)) t+=p.mistakes;
+  return t;
+}
+
+async function refreshTracker(){
+  pageOverrides={};
+  await loadFromFirebase();
+}
+
+// ═══════════════════════════════════════════════════════
+// COMPUTE PAGE DATA FROM D
+// ═══════════════════════════════════════════════════════
+function getStreak(n,a){
+  return D[String(n)]?.[String(a)]?.streak||0;
+}
+
+function computePageData(){
+  pageData={};
+  const total=parseInt(document.getElementById('totalPages').value)||173;
+  // Pages 2 to (1+total)
+  for(let p=2;p<=1+total;p++){
+    const surahs=(PAGE_SURAHS[p]||[]).filter(n=>SURAH_INFO[n]);
+    let mistakes=0,hiMis=0,medMis=0,lowMis=0;
+    const surahDetails=[];
+    surahs.forEach(n=>{
+      const info=SURAH_INFO[n];
+      // Count ayahs on this page: approx by page range
+      let ayahMistakes=0,ayahHi=0,ayahMed=0,ayahLow=0;
+      for(let a=1;a<=info.ayahs;a++){
+        const s=getStreak(n,a);
+        if(s>0){
+          mistakes+=s; ayahMistakes+=s;
+          if(s>=3){hiMis++;ayahHi++;}
+          else if(s===2){medMis++;ayahMed++;}
+          else{lowMis++;ayahLow++;}
+        }
+      }
+      if(ayahMistakes>0) surahDetails.push({n,name:info.name,m:ayahMistakes,hi:ayahHi,med:ayahMed,low:ayahLow});
+    });
+    // For long surahs spanning many pages, we split mistakes proportionally
+    // For short surahs fully on one page, all mistakes land on that page — accurate
+    pageData[p]={mistakes,hiMis,medMis,lowMis,surahs:surahDetails};
+  }
+  // For multi-page surahs: redistribute by proportional ayah density
+  redistributeMultiPageSurahs(total);
+}
+
+function redistributeMultiPageSurahs(total){
+  // For each surah, tally which pages it appears on
+  // then split mistake count proportionally by ayahs-per-page
+  const surahPageCount={};
+  for(let p=2;p<=1+total;p++){
+    (PAGE_SURAHS[p]||[]).forEach(n=>{
+      if(!surahPageCount[n]) surahPageCount[n]=[];
+      surahPageCount[n].push(p);
+    });
+  }
+  // For surahs spanning >1 page, re-apportion mistakes
+  for(const [ns,pages] of Object.entries(surahPageCount)){
+    const n=parseInt(ns);
+    if(pages.length<=1)continue;
+    const info=SURAH_INFO[n];
+    if(!info)continue;
+    // Total ayahs / total pages = ayahs per page (approximate)
+    const ayahsPerPage=info.ayahs/pages.length;
+    // Sum all mistakes for this surah
+    let totalSurahMis=0;
+    for(let a=1;a<=info.ayahs;a++) totalSurahMis+=getStreak(n,a);
+    if(totalSurahMis===0)continue;
+    // Spread evenly across pages
+    const misPerPage=totalSurahMis/pages.length;
+    pages.forEach(p=>{
+      if(!pageData[p])return;
+      // Replace the surah contribution with the proportional share
+      const idx=pageData[p].surahs.findIndex(s=>s.n===n);
+      if(idx>=0){
+        const orig=pageData[p].surahs[idx];
+        const share=Math.round(misPerPage);
+        // Adjust page totals
+        pageData[p].mistakes=pageData[p].mistakes-orig.m+share;
+        pageData[p].surahs[idx].m=share;
+      }
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// CLASSIFY PAGES
+// ═══════════════════════════════════════════════════════
+let pageStrength={}; // pageNum -> 'strong'|'medium'|'weak'
+
+function classifyPage(p){
+  const thresh=parseInt(document.getElementById('strongThreshold').value)||2;
+  if(pageOverrides[p]) return pageOverrides[p];
+  if(!trackerLoaded) return 'weak'; // default before load
+  const m=(pageData[p]||{}).mistakes||0;
+  if(m<=thresh)       return 'strong';
+  if(m<=thresh+2)     return 'medium';
+  return 'weak';
+}
+
+function reclassifyFromTracker(){
+  const total=parseInt(document.getElementById('totalPages').value)||173;
+  pageStrength={};
+  for(let p=2;p<=1+total;p++) pageStrength[p]=classifyPage(p);
+  generateSchedule();
+}
+
+// ═══════════════════════════════════════════════════════
+// TOGGLE (manual override)
+// ═══════════════════════════════════════════════════════
+function togglePage(p){
+  const cur=pageStrength[p]||'weak';
+  const next=cur==='weak'?'medium':cur==='medium'?'strong':'weak';
+  pageStrength[p]=next;
+  pageOverrides[p]=next;
+  const btn=document.querySelector(`[data-page="${p}"]`);
+  if(btn) refreshPageBtn(btn,p);
+  const card=btn&&btn.closest('.day-card');
+  if(card) refreshMethodBlock(card);
+  updateStats();
+}
+
+function refreshPageBtn(btn,p){
+  const s=pageStrength[p]||'weak';
+  const d=pageData[p]||{};
+  const m=d.mistakes||0;
+  const isOverride=!!pageOverrides[p];
+  btn.className=`page-btn ${s}${isOverride?' manual-override':''}`;
+  const misText=trackerLoaded?(m>0?m:'✓'):'?';
+  const misColor=s==='strong'?'var(--low)':s==='medium'?'var(--med)':'var(--hi)';
+  btn.innerHTML=`<span class="pg-num">${p}</span><span class="pg-mis">${misText}</span>${buildTooltip(p,d,s)}`;
+}
+
+function buildTooltip(p,d,s){
+  if(!trackerLoaded) return `<span class="tooltip">p.${p} — no tracker data</span>`;
+  const m=d.mistakes||0;
+  if(m===0) return `<span class="tooltip">p.${p} — no mistakes 🟢</span>`;
+  const lines=d.surahs.map(x=>`${x.name}: ${x.m}`).join(' · ')||'';
+  const st=s==='strong'?'🟢 Strong':s==='medium'?'🟡 Medium':'🔴 Weak';
+  return `<span class="tooltip">p.${p} · ${m} mistakes · ${st}<br>${lines}</span>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// GENERATE SCHEDULE
+// ═══════════════════════════════════════════════════════
+function generateSchedule(){
+  const total  =parseInt(document.getElementById('totalPages').value)||173;
+  const cycle  =parseInt(document.getElementById('cycleDays').value)||10;
+  const minutes=parseInt(document.getElementById('dailyTime').value)||60;
+
+  // Ensure pageStrength is up to date
+  for(let p=2;p<=1+total;p++){
+    if(!pageStrength[p]) pageStrength[p]=classifyPage(p);
+  }
+
+  const base=Math.floor(total/cycle);
+  const rem =total%cycle;
+
+  const days=[];
+  let cursor=2; // Start from page 2
+  const dayNames=cycle===7
+    ?['Day 1 — Sat','Day 2 — Sun','Day 3 — Mon','Day 4 — Tue','Day 5 — Wed','Day 6 — Thu','Day 7 — Fri']
+    :Array.from({length:10},(_,i)=>`Day ${i+1}`);
+
+  for(let d=0;d<cycle;d++){
+    const count=base+(d<rem?1:0);
+    const sp=cursor, ep=cursor+count-1;
+    cursor+=count;
+    const pages=Array.from({length:count},(_,i)=>sp+i);
+    days.push({name:dayNames[d]||`Day ${d+1}`,pages,sp,ep,count});
+  }
+
+  // Time calc: strong=3min, medium=4min, weak=5min
+  const allPages=days.flatMap(d=>d.pages);
+  const sc=allPages.filter(p=>pageStrength[p]==='strong').length;
+  const mc=allPages.filter(p=>pageStrength[p]==='medium').length;
+  const wc=allPages.filter(p=>pageStrength[p]==='weak').length;
+  const estTotal=sc*3+mc*4+wc*5;
+  const estPerDay=Math.round(estTotal/cycle);
+
+  const warn=document.getElementById('timeWarn');
+  if(estPerDay>minutes+8){
+    warn.style.display='block';
+    warn.innerHTML=`⚠ Each day averages ~<strong>${estPerDay} min</strong> based on your mistake data. This exceeds your ${minutes}-min target. Consider a <strong>${Math.ceil(estTotal/minutes)}-day cycle</strong>, or your time will reduce naturally as you fix mistakes.`;
+  } else {
+    warn.style.display='none';
+  }
+
+  const cycleEl=document.getElementById('cycleDays');
+  cycleEl.querySelector(`option[value="${cycle}"]`).text=`${cycle} days`;
+  document.getElementById('cycleSpan').textContent=`Pages 2–${1+total} · ${total} pages`;
+
+  updateStats(days);
+  renderSchedule(days);
+}
+
+function updateStats(days){
+  const total=parseInt(document.getElementById('totalPages').value)||173;
+  const cycle=parseInt(document.getElementById('cycleDays').value)||10;
+  if(!days){
+    days=[];let cursor=2;
+    const base=Math.floor(total/cycle);const rem=total%cycle;
+    for(let d=0;d<cycle;d++){const c=base+(d<rem?1:0);days.push({pages:Array.from({length:c},(_,i)=>cursor+i)});cursor+=c;}
+  }
+  const all=days.flatMap(d=>d.pages);
+  const sc=all.filter(p=>pageStrength[p]==='strong').length;
+  const mc=all.filter(p=>pageStrength[p]==='medium').length;
+  const wc=all.filter(p=>pageStrength[p]==='weak').length;
+  const pct=Math.round((total/604)*100);
+  const maxPer=Math.max(...days.map(d=>d.count||0));
+  const estPerDay=Math.round((sc*3+mc*4+wc*5)/cycle);
+
+  document.getElementById('statsBar').innerHTML=`
+    <div class="stat-box"><div class="stat-val">${total}</div><div class="stat-lbl">Memorised</div>
+      <div class="prog-outer"><div class="prog-inner" style="width:${pct}%"></div></div></div>
+    <div class="stat-box"><div class="stat-val">${cycle}</div><div class="stat-lbl">Day Cycle</div></div>
+    <div class="stat-box"><div class="stat-val">${maxPer}</div><div class="stat-lbl">Pages/Day</div></div>
+    <div class="stat-box"><div class="stat-val" style="color:var(--hi)">${wc}</div><div class="stat-lbl">Weak</div></div>
+    <div class="stat-box"><div class="stat-val" style="color:var(--med)">${mc}</div><div class="stat-lbl">Medium</div></div>
+    <div class="stat-box"><div class="stat-val" style="color:var(--low)">${sc}</div><div class="stat-lbl">Strong</div></div>
+    <div class="stat-box"><div class="stat-val">${estPerDay}</div><div class="stat-lbl">Est Min/Day</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════
+function renderSchedule(days){
+  const grid=document.getElementById('scheduleGrid');
+  grid.innerHTML=days.map(day=>{
+    const sc=day.pages.filter(p=>pageStrength[p]==='strong').length;
+    const mc=day.pages.filter(p=>pageStrength[p]==='medium').length;
+    const wc=day.pages.filter(p=>pageStrength[p]==='weak').length;
+    const t=sc*3+mc*4+wc*5;
+    const timeStr=t<60?`~${t} min`:`~${Math.floor(t/60)}h${t%60?` ${t%60}m`:''}`;
+
+    const pageBtns=day.pages.map(p=>{
+      const s=pageStrength[p]||'weak';
+      const d=pageData[p]||{};
+      const m=d.mistakes||0;
+      const misText=trackerLoaded?(m>0?m:'✓'):'?';
+      const isOverride=!!pageOverrides[p];
+      const tooltip=buildTooltip(p,d,s);
+      return `<button class="page-btn ${s}${isOverride?' manual-override':''}" data-page="${p}" onclick="togglePage(${p})" title="">
+        <span class="pg-num">${p}</span>
+        <span class="pg-mis">${misText}</span>
+        ${tooltip}
+      </button>`;
+    }).join('');
+
+    const methodHTML=buildMethodBlock(wc,mc,sc,day.pages);
+
+    return `<div class="day-card">
+      <div class="day-hdr">
+        <div>
+          <div class="day-label">${day.name}</div>
+          <div class="day-range">Pages ${day.sp}–${day.ep}</div>
+        </div>
+        <div class="day-badges">
+          <span class="badge badge-gold">${day.count} pages</span>
+          <span class="badge badge-time">${timeStr}</span>
+          ${wc>0?`<span class="badge badge-weak">${wc} weak</span>`:''}
+          ${sc>0?`<span class="badge badge-strong">${sc} strong</span>`:''}
+        </div>
+      </div>
+      <div class="pages-wrap">
+        <div class="pages-section-lbl"><span style="width:8px;height:8px;background:var(--mu);border-radius:2px;display:inline-block"></span> Pages — tap to toggle</div>
+        <div class="page-grid">${pageBtns}</div>
+        ${methodHTML}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function buildMethodBlock(wc,mc,sc,pages){
+  const allWeak =wc===pages.length;
+  const allStrong=sc===pages.length;
+
+  if(allStrong){
+    // Check if any have mistakes to fix
+    const withMis=pages.filter(p=>(pageData[p]||{}).mistakes>0);
+    const fixNote=withMis.length>0
+      ?` After reciting, go back to pages <strong>${withMis.join(', ')}</strong> and fix the specific ayāt with mistakes.`
+      :'No active mistakes recorded — full by-heart recitation.';
+    return `<div class="method-block all-strong">
+      <div class="method-lbl"><span style="width:8px;height:8px;background:var(--low);border-radius:2px;display:inline-block"></span> All pages strong — by heart only</div>
+      Recite entirely by heart — mushaf closed.${fixNote}
+    </div>`;
+  }
+
+  if(allWeak){
+    return `<div class="method-block all-weak">
+      <div class="method-lbl"><span style="width:8px;height:8px;background:var(--hi);border-radius:2px;display:inline-block"></span> All pages need strengthening</div>
+      <strong>① Open mushaf</strong> — read each page slowly, repair the mental image. <strong>② Close it.</strong> <strong>③ Recite by heart.</strong> If you stumble, glance briefly then close and continue. 2–3 passes per page.
+    </div>`;
+  }
+
+  const strongPages=pages.filter(p=>pageStrength[p]==='strong');
+  const weakMedPages=pages.filter(p=>pageStrength[p]!=='strong');
+  const fixPages=strongPages.filter(p=>(pageData[p]||{}).mistakes>0);
+
+  return `<div class="method-block mixed">
+    <div class="method-lbl"><span style="width:8px;height:8px;background:var(--med);border-radius:2px;display:inline-block"></span> Mixed — ${wc+mc} to strengthen, ${sc} strong</div>
+    <strong>Start with pages ${weakMedPages.join(', ')}:</strong> mushaf first → close → recite by heart (2–3 passes).<br>
+    <strong>Then pages ${strongPages.join(', ')}:</strong> by heart — mushaf closed.${fixPages.length?` Fix specific ayāt on pages <strong>${fixPages.join(', ')}</strong>.`:''}
+  </div>`;
+}
+
+function refreshMethodBlock(card){
+  const btns=[...card.querySelectorAll('.page-btn')];
+  const pages=btns.map(b=>parseInt(b.dataset.page));
+  const sc=pages.filter(p=>pageStrength[p]==='strong').length;
+  const mc=pages.filter(p=>pageStrength[p]==='medium').length;
+  const wc=pages.filter(p=>pageStrength[p]==='weak').length;
+  const existing=card.querySelector('.method-block');
+  if(existing) existing.outerHTML=buildMethodBlock(wc,mc,sc,pages);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+async function init(){
+  generateSchedule(); // Show skeleton immediately
+  await loadFromFirebase();
+  document.getElementById('loading').classList.add('hidden');
+}
+init();
+</script>
+</body>
+</html>
